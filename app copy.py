@@ -8,7 +8,6 @@ from requests import get
 import src.modules # импорт нашего модуля 
 from dotenv import load_dotenv
 import os
-from time import sleep
 import threading
 from logging.handlers import RotatingFileHandler
 import logging
@@ -38,14 +37,13 @@ file_handler.setLevel(logging.INFO)
 app.logger.addHandler(file_handler) 
 app.logger.setLevel(logging.INFO)
 
-# # устанавливаем стандартные параметры логирования
-# logging.basicConfig(
-#     filename='logs/myapi.log', 
-#     level=logging.INFO, 
-#     format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s',
-#     datefmt='%d-%m-%Y %H:%M:%S'
-# )
-
+# устанавливаем стандартные параметры логирования
+logging.basicConfig(
+    filename='logs/myapi.log', 
+    level=logging.INFO, 
+    format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s',
+    datefmt='%d-%m-%Y %H:%M:%S'
+)
 #загружаем переменные из .env
 tokken = os.getenv('tokken')
 app_debug = os.getenv('debug_on')
@@ -72,27 +70,20 @@ def index():
 def connect(tokken):
     request_data = request.get_json()
     number = None
-    status = None
     
     if app_debug == "1":
         #print (json.dumps(request_data, indent=2, ensure_ascii = False)) #debug
-        app.logger.info(f"[API]\nrequest_data: {json.dumps(request_data, indent=2, ensure_ascii = False)}")
+        logging.info(f"[API]\nrequest_data: {json.dumps(request_data, indent=2, ensure_ascii = False)}")
 
     if request_data:
         #print (request_data) #debug
         if 'number' in request_data:
             number = request_data['number']
-        if 'status' in request_data:
-            if request_data['status'] == 1:
-                status = "✅"
-            else:
-                status = "❌"
-            
-
+    
     #подготовка сообщения 
     if tokken == tokken:
         my_text = (
-            f"{status} Новый звонок\n<b>📱 +{number}\n</b>"
+            f"Новый звонок\n<b>📱 +{number}</b>"   
         )
         bot_tokken = os.getenv('bot_tokken') #загружаем токкен бота из файла
         Bot = telebot.TeleBot(bot_tokken) #назначаем токкен в телебот
@@ -101,7 +92,7 @@ def connect(tokken):
             Bot.send_message(users_id, my_text, parse_mode="HTML")
             if app_debug == "1":
                 answer = { 'ok':True, 'tokken': 'tokken accepted', 'TelegramBot':'ok'}
-                app.logger.info(f'[API]\nanswer: \n{json.dumps(answer, indent=2, ensure_ascii = False)}')
+                logging.info(f'[API]\nanswer: \n{json.dumps(answer, indent=2, ensure_ascii = False)}')
             return make_response(jsonify(
                 ok=True,
                 tokken="tokken accepted",
@@ -111,7 +102,7 @@ def connect(tokken):
             print(f"Ошибка: {my_error}") #debug 
             if app_debug == "1":
                 answer = { 'ok':False, 'tokken': 'tokken accepted', 'TelegramBot':'Forbidden: bot was blocked by the user'}
-                app.logger.info(f'[API]\nanswer: \n{json.dumps(answer, indent=2, ensure_ascii = False)}')
+                logging.info(f'[API]\nanswer: \n{json.dumps(answer, indent=2, ensure_ascii = False)}')
             return make_response(jsonify(
             ok=False,
             tokken="tokken accepted",
@@ -171,9 +162,9 @@ def bot_thread():
         # отправляем сообщение админу
         Bot.send_message(admins_id, f"Ошибка: {my_bot_error}")
         Bot.send_message(admins_id, "Bot упал отжался и встал") # отправляем сообщение админу
-        sleep(20)
+        #sleep(20)
 
-# Запуск APP
+# Запуск бота
 if __name__ == '__main__':
     flask_app = threading.Thread(target=flask_thread)
     bot_app = threading.Thread(target=bot_thread)
