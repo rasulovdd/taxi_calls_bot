@@ -88,7 +88,7 @@ def connect(tokken):
         if 'number' in request_data:
             number = request_data['number']
         if 'status' in request_data:
-            if request_data['status'] == 1:
+            if request_data['status'] == "1":
                 status = "✅"
             else:
                 status = "❌"
@@ -119,7 +119,7 @@ def connect(tokken):
 def notifications(number, status):
     """Уведомляем пользователей"""
     my_text = (
-            f"{status} Новый звонок\n<b>📱 +{number}\n</b>"
+            f"{status} Новый звонок\n<b>📱 {number}\n</b>"
         )
     #print (my_text) #debug
     for id in users_id:
