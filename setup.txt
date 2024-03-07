@@ -1,0 +1,4 @@
+git clone https://github.com/rasulovdd/taxi_calls_bot.git
+python -m venv env
+call "C:\tools\taxi_calls_bot\env\Scripts\activate.bat"
+pip install -r requirements.txt
