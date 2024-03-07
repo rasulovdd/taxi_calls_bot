@@ -159,27 +159,14 @@ def send_welcome(message):
     # print (user_id) #debug
     # print (users_id) #debug
     bot_text = "Привет 🤝"
+    Bot.send_message(user_id, bot_text)
     for id in users_id:
         if str(user_id) == str(id):
-            bot_text = "Привет 🤝\n✅Теперь я буду уведомлять тебя о звонках на номер taxi"
-            try:
-                Bot.send_message(user_id, bot_text)
-                if app_debug == "1":
-                    app.logger.info(f'[BOT] [user_id:{user_id}] Сообщение отправлено')
-            except Exception as my_error:
-                print(f"Ошибка: {my_error}") #debug 
-                if app_debug == "1":
-                    app.logger.error(f'[BOT] [user_id:{id}] Ошибка: {my_error}')
-        else:
-            bot_text = "Привет 🤝\n❌У тебя нету доступа.\nОбратись пожалуйста к @RasulovDD"
-            try:
-                Bot.send_message(user_id, bot_text)
-                if app_debug == "1":
-                    app.logger.info(f'[BOT] [user_id:{user_id}] Сообщение отправлено')
-            except Exception as my_error:
-                print(f"Ошибка: {my_error}") #debug 
-                if app_debug == "1":
-                    app.logger.error(f'[BOT] [user_id:{id}] Ошибка: {my_error}')
+            bot_text = "✅Теперь я буду уведомлять тебя о звонках на номер taxi"
+            Bot.send_message(user_id, bot_text)
+            if app_debug == "1":
+                app.logger.info(f'[BOT] [user_id:{user_id}] Сообщение отправлено')
+
             
         
         
