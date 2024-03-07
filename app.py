@@ -127,7 +127,7 @@ def notifications(number, status):
         try:
             Bot.send_message(id, my_text, parse_mode="HTML")
             if app_debug == "1":
-                app.logger.info(f'[BOT] Cообщение отправлено')
+                app.logger.info(f'[BOT] [user_id:{id}] Cообщение отправлено')
         except Exception as my_error:
             print(f"Ошибка: {my_error}") #debug 
             if app_debug == "1":
