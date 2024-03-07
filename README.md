@@ -98,7 +98,7 @@ Database: mysql<br/>
 пример заполнения .env файла:
 
     bot_tokken="Токен бота"
-    tokken="токен доступа к BotAPI"
+    api_tokken="токен доступа к BotAPI"
     #Адрес базы данных
     db_host="127.0.0.1"
     #имя пользователя БД

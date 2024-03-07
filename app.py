@@ -47,13 +47,18 @@ app.logger.setLevel(logging.INFO)
 # )
 
 #загружаем переменные из .env
-tokken = os.getenv('tokken')
+api_tokken = os.getenv('api_tokken')
 app_debug = os.getenv('debug_on')
-users_id = os.getenv('users_id')
+users_id_all = os.getenv('users_id')
+users_id = users_id_all.split(",")
 my_host = os.getenv('my_host')
 my_port = os.getenv('my_port')
 bot_tokken = os.getenv('bot_tokken')
-admins_id = os.getenv('admins_id')
+admins_id_all = os.getenv('admins_id')
+admins_id = admins_id_all.split(",")
+
+bot_tokken = os.getenv('bot_tokken') #загружаем токкен бота из файла
+Bot = telebot.TeleBot(bot_tokken) #назначаем токкен в телебот
 
 @app.route('/favicon.ico')
 def favicon():
@@ -87,37 +92,46 @@ def connect(tokken):
                 status = "✅"
             else:
                 status = "❌"
-            
 
     #подготовка сообщения 
-    if tokken == tokken:
-        my_text = (
+    if tokken == api_tokken:
+        #возврашаем что все ок
+        if app_debug == "1":
+            answer = { 'ok':True, 'tokken': 'tokken accepted'}
+            app.logger.info(f'[API]\nanswer: \n{json.dumps(answer, indent=2, ensure_ascii = False)}')
+        #уведомляем пользователей
+        notifications(number, status) 
+        #возврашаем результат
+        return make_response(jsonify(
+                                ok=True,
+                                tokken="tokken accepted"
+                            ), 200) 
+    else:
+        if app_debug == "1":
+            answer = { 'ok':False, 'tokken': 'the token is not correct'}
+            app.logger.info(f'[API]\ntokken: {tokken}\nanswer: \n{json.dumps(answer, indent=2, ensure_ascii = False)}')
+        return make_response(jsonify(
+                            ok=False,
+                            tokken="the token is not correct"
+                            ), 404)        
+    
+
+def notifications(number, status):
+    """Уведомляем пользователей"""
+    my_text = (
             f"{status} Новый звонок\n<b>📱 +{number}\n</b>"
         )
-        bot_tokken = os.getenv('bot_tokken') #загружаем токкен бота из файла
-        Bot = telebot.TeleBot(bot_tokken) #назначаем токкен в телебот
-
+    #print (my_text) #debug
+    for id in users_id:
+        #print (id) #debug
         try:
-            Bot.send_message(users_id, my_text, parse_mode="HTML")
+            Bot.send_message(id, my_text, parse_mode="HTML")
             if app_debug == "1":
-                answer = { 'ok':True, 'tokken': 'tokken accepted', 'TelegramBot':'ok'}
-                app.logger.info(f'[API]\nanswer: \n{json.dumps(answer, indent=2, ensure_ascii = False)}')
-            return make_response(jsonify(
-                ok=True,
-                tokken="tokken accepted",
-                TelegramBot="ok"
-            ), 200)
+                app.logger.info(f'[BOT] Cообщение отправлено')
         except Exception as my_error:
             print(f"Ошибка: {my_error}") #debug 
             if app_debug == "1":
-                answer = { 'ok':False, 'tokken': 'tokken accepted', 'TelegramBot':'Forbidden: bot was blocked by the user'}
-                app.logger.info(f'[API]\nanswer: \n{json.dumps(answer, indent=2, ensure_ascii = False)}')
-            return make_response(jsonify(
-            ok=False,
-            tokken="tokken accepted",
-            TelegramBot="Forbidden: bot was blocked by the user"
-            ), 200)
-    
+                app.logger.error(f'[BOT] Ошибка: {my_error}')
 
 @app.errorhandler(404)
 def not_found(error):
@@ -142,8 +156,26 @@ Bot.set_my_commands(
 def send_welcome(message):
     """Обрабатываем текстовые сообщения '/start' """
     user_id = message.from_user.id
-    allow_user = users_id
-    print (allow_user) #debug
+    # print (user_id) #debug
+    # print (users_id) #debug
+    bot_text = "Привет 🤝"
+    for id in users_id:
+        if str(user_id) == str(id):
+            bot_text = "Привет 🤝\n✅Теперь я буду уведомлять тебя о звонках на номер taxi"
+        else:
+            bot_text = "Привет 🤝\n❌У тебя нету доступа.\nОбратись пожалуйста к @RasulovDD"
+        
+        try:
+            Bot.send_message(id, bot_text)
+            if app_debug == "1":
+                app.logger.info(f'[BOT] [user_id:{id}] Сообщение отправлено')
+        except Exception as my_error:
+            print(f"Ошибка: {my_error}") #debug 
+            if app_debug == "1":
+                app.logger.error(f'[BOT] [user_id:{id}] Ошибка: {my_error}')
+        
+
+
 
 @Bot.message_handler(commands=['id'])
 def send_id(message):
