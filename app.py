@@ -12,11 +12,13 @@ from time import sleep
 import threading
 from logging.handlers import RotatingFileHandler
 import logging
+from src import db
+from src import app01
 
 load_dotenv()
 
-app = Flask(__name__)
-app.config['JSON_SORT_KEYS'] = False
+# app01 = Flask(__name__)
+# app01.config['JSON_SORT_KEYS'] = False
 
 # создаем папку если его нет 
 if not os.path.exists('logs'):
@@ -25,18 +27,18 @@ if not os.path.exists('logs'):
     except Exception as my_error:
         print(f"Ошибка: {my_error}") #debug
     
-file_handler = RotatingFileHandler(
-    'logs/taxi_calls.log', maxBytes=5242880,
-    backupCount=10
-)
-file_handler.setFormatter(logging.Formatter(
-    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]',
-    datefmt='%d-%m-%Y %H:%M:%S'
-    )
-)
-file_handler.setLevel(logging.INFO)
-app.logger.addHandler(file_handler) 
-app.logger.setLevel(logging.INFO)
+# file_handler = RotatingFileHandler(
+#     'logs/taxi_calls.log', maxBytes=5242880,
+#     backupCount=10
+# )
+# file_handler.setFormatter(logging.Formatter(
+#     '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]',
+#     datefmt='%d-%m-%Y %H:%M:%S'
+#     )
+# )
+# file_handler.setLevel(logging.INFO)
+# app01.logger.addHandler(file_handler) 
+# app01.logger.setLevel(logging.INFO)
 
 # # устанавливаем стандартные параметры логирования
 # logging.basicConfig(
@@ -49,31 +51,30 @@ app.logger.setLevel(logging.INFO)
 #загружаем переменные из .env
 api_tokken = os.getenv('api_tokken')
 app_debug = os.getenv('debug_on')
-users_id_all = os.getenv('users_id')
-users_id = users_id_all.split(",")
+#users_id_all = os.getenv('users_id')
+#users_id = users_id_all.split(",")
 my_host = os.getenv('my_host')
 my_port = os.getenv('my_port')
 bot_tokken = os.getenv('bot_tokken')
-admins_id_all = os.getenv('admins_id')
-admins_id = admins_id_all.split(",")
+admins_id = os.getenv('admins_id')
 
 bot_tokken = os.getenv('bot_tokken') #загружаем токкен бота из файла
 Bot = telebot.TeleBot(bot_tokken) #назначаем токкен в телебот
 
-@app.route('/favicon.ico')
+@app01.route('/favicon.ico')
 def favicon():
     #print (app.root_path) #debug
-    return send_from_directory(os.path.join(app.root_path, 'static'),
+    return send_from_directory(os.path.join(app01.root_path, 'static'),
                             'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
-@app.route('/api/test')
+@app01.route('/api/test')
 def index():
     return make_response(jsonify(
                     ok=True
                 ), 200)
 
 #GET мы не обрабатываем 
-@app.route('/api/call/<tokken>', methods=['POST']) #уведомления в чат что появился новый клиент 
+@app01.route('/api/call/<tokken>', methods=['POST']) #уведомления в чат что появился новый клиент 
 def connect(tokken):
     request_data = request.get_json()
     number = None
@@ -81,7 +82,7 @@ def connect(tokken):
     
     if app_debug == "1":
         #print (json.dumps(request_data, indent=2, ensure_ascii = False)) #debug
-        app.logger.info(f"[API]\nrequest_data: {json.dumps(request_data, indent=2, ensure_ascii = False)}")
+        app01.logger.info(f"[API]\nrequest_data: {json.dumps(request_data, indent=2, ensure_ascii = False)}")
 
     if request_data:
         #print (request_data) #debug
@@ -98,7 +99,7 @@ def connect(tokken):
         #возврашаем что все ок
         if app_debug == "1":
             answer = { 'ok':True, 'tokken': 'tokken accepted'}
-            app.logger.info(f'[API]\nanswer: \n{json.dumps(answer, indent=2, ensure_ascii = False)}')
+            app01.logger.info(f'[API]\nanswer: \n{json.dumps(answer, indent=2, ensure_ascii = False)}')
         #уведомляем пользователей
         notifications(number, status) 
         #возврашаем результат
@@ -109,7 +110,7 @@ def connect(tokken):
     else:
         if app_debug == "1":
             answer = { 'ok':False, 'tokken': 'the token is not correct'}
-            app.logger.info(f'[API]\ntokken: {tokken}\nanswer: \n{json.dumps(answer, indent=2, ensure_ascii = False)}')
+            app01.logger.info(f'[API]\ntokken: {tokken}\nanswer: \n{json.dumps(answer, indent=2, ensure_ascii = False)}')
         return make_response(jsonify(
                             ok=False,
                             tokken="the token is not correct"
@@ -118,22 +119,25 @@ def connect(tokken):
 
 def notifications(number, status):
     """Уведомляем пользователей"""
+    #записываем номер клиента в базу
+    db.set_number(number)
     my_text = (
             f"{status} Новый звонок\n<b>📱 {number}\n</b>"
         )
+    all_users = db.get_all_users(1)
     #print (my_text) #debug
-    for id in users_id:
+    for id in all_users:
         #print (id) #debug
         try:
             Bot.send_message(id, my_text, parse_mode="HTML")
             if app_debug == "1":
-                app.logger.info(f'[BOT] [user_id:{id}] Cообщение отправлено')
+                app01.logger.info(f'[BOT] [UserID: {id}] Cообщение отправлено')
         except Exception as my_error:
             print(f"Ошибка: {my_error}") #debug 
             if app_debug == "1":
-                app.logger.error(f'[BOT] Ошибка: {my_error}')
+                app01.logger.error(f'[BOT] Ошибка: {my_error}')
 
-@app.errorhandler(404)
+@app01.errorhandler(404)
 def not_found(error):
     return make_response(jsonify({'error': 'Not found'}), 404)
 
@@ -156,22 +160,45 @@ Bot.set_my_commands(
 def send_welcome(message):
     """Обрабатываем текстовые сообщения '/start' """
     user_id = message.from_user.id
-    # print (user_id) #debug
-    # print (users_id) #debug
-    bot_text = "Привет 🤝"
-    Bot.send_message(user_id, bot_text)
-    for id in users_id:
-        if str(user_id) == str(id):
-            bot_text = "✅Теперь я буду уведомлять тебя о звонках на номер taxi"
-            Bot.send_message(user_id, bot_text)
-            if app_debug == "1":
-                app.logger.info(f'[BOT] [user_id:{user_id}] Сообщение отправлено')
-
-            
+    full_name = message.from_user.full_name
+    
+    #если пользователь сушествует 
+    if db.is_user_exists(user_id):
+        #получаем список менеджеров (статус = 1)
+        all_users = db.get_all_users(1)
+        Bot.send_message(user_id, "Привет 🤝\nРад видеть вас снова")
+        if int(user_id) in all_users:
+            Bot.send_message(user_id, "✅ Теперь я буду уведомлять тебя о звонках на номер Taxi")
+        else:
+            Bot.send_message(user_id, "❌ У тебя нету доступа.\nОбратись пожалуйста к @RasulovDD")
+            Bot.send_message(user_id, f"Твой ID: {user_id}")
+    else:
+        #записываем инфо в базу данных
+        if int(user_id) == int(admins_id):
+            #print ("admin") #debug
+            db.set_user_id(user_id, full_name, 1)
+        else:
+            db.set_user_id(user_id, full_name, 0)
         
-        
-        
-
+        #получаем список менеджеров (статус = 1)
+        all_users = db.get_all_users(1)
+        if int(user_id) in all_users:
+            #print ("в списке пользователей")
+            Bot.send_message(user_id, "Привет 🤝\n✅ Теперь я буду уведомлять тебя о звонках на номер Taxi")
+        else:
+            Bot.send_message(user_id, "Привет 🤝\n❌ У тебя нету доступа.\nОбратись пожалуйста к @RasulovDD")
+            Bot.send_message(user_id, f"Твой ID: {user_id}")
+    
+    if app_debug == "1":
+        app01.logger.info(f'[BOT] [UserID: {user_id}] Сообщение отправлено')
+    
+    #db.set_user_id(user_id, full_name, 0)
+    # for id in users_id:
+    #     if str(user_id) == str(id):
+    #         bot_text = "✅Теперь я буду уведомлять тебя о звонках на номер taxi"
+    #         Bot.send_message(user_id, bot_text)
+    #         if app_debug == "1":
+    #             app.logger.info(f'[BOT] [user_id:{user_id}] Сообщение отправлено')
 
 
 @Bot.message_handler(commands=['id'])
@@ -182,21 +209,40 @@ def send_id(message):
     else:
         Bot.send_message(message.from_user.id, f"Ваш ID: {message.from_user.id}")
 
+@Bot.message_handler(commands=['admin'])
+def command_admin(message):
+    """ Обрабатываем текстовые сообщения '/admin'. """
+    text = message.text
+    user_id = message.from_user.id
+    #print (admin_id) #debug
+    if int(user_id) == int(admins_id):
+        #даем права админа
+        manager_id = text.split(" ")[1]
+        db.set_admin(manager_id, 1)
+        Bot.send_message(user_id, f"✅ UserID: {manager_id} Права админа, выданы")
+        Bot.send_message(manager_id, "✅ Доступ получен!\nТеперь я буду уведомлять тебя о звонках на номер taxi")
+        if app_debug == "1":
+            app01.logger.info(f'[BOT] [UserID: {user_id}] Добавил менеджера {manager_id}')
+    else:
+        Bot.send_message(user_id, "❌ У Вас нет прав администратора")
+        if app_debug == "1":
+            app01.logger.info(f'[BOT] [UserID: {user_id}] не имеет права админ')
+
 def flask_thread():
     #запускаем BotAPI
-    app.logger.info('[API] startup')
-    app.run(host=my_host, port=my_port, debug=False) 
+    app01.logger.info('[API] startup')
+    app01.run(host=my_host, port=my_port, debug=False) 
 
 def bot_thread():
     try:
-        app.logger.info('[BOT] startup')
+        app01.logger.info('[BOT] startup')
         #отправляем уведомеление в чат админу
         Bot.send_message(2964812, "Taxi Calls API на сервере bot02.wilgood.ru запустился") 
         #Непрекращающаяся прослушка наших чатов
         Bot.polling(none_stop=True, interval=0,  timeout=120) 
     except Exception as my_bot_error:
-        app.logger.info(f'[BOT] startup, Ошибка: {my_bot_error}')
-        app.logger.info(f'[BOT] Bot упал отжался и встал')
+        app01.logger.info(f'[BOT] startup, Ошибка: {my_bot_error}')
+        app01.logger.info(f'[BOT] Bot упал отжался и встал')
         # отправляем сообщение админу
         Bot.send_message(admins_id, f"Ошибка: {my_bot_error}")
         Bot.send_message(admins_id, "Bot упал отжался и встал") # отправляем сообщение админу

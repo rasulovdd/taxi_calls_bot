@@ -13,12 +13,19 @@ GRANT ALL PRIVILEGES ON taxi_calls_bot.* TO 'bot_user'@'localhost';
 FLUSH PRIVILEGES;
 EOF
 
-# Создание таблицы 'users' в базе данных 'taxi_calls_bot'
+# Создание таблицы 'client' и 'managers' в базе данных 'taxi_calls_bot'
 sudo mysql -e "USE taxi_calls_bot;
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE IF NOT EXISTS client (
   id int(10) PRIMARY KEY AUTO_INCREMENT,
   date TIMESTAMP NULL DEFAULT (now()),
   number TEXT NULL DEFAULT NULL
+);
+CREATE TABLE IF NOT EXISTS managers (
+  id int(10) PRIMARY KEY AUTO_INCREMENT,
+  date TIMESTAMP NULL DEFAULT (now()),
+  user_id BIGINT UNIQUE INDEX,
+  full_name VARCHAR NULL DEFAULT NULL,
+  admin INT(10) NOT NULL DEFAULT '0',
 );"
 
 sudo sed -i 's/bind-address.*/bind-address = 127.0.0.1/' /etc/mysql/mysql.conf.d/mysqld.cnf
