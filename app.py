@@ -217,7 +217,12 @@ def command_admin(message):
     #print (admin_id) #debug
     if int(user_id) == int(admins_id):
         #даем права админа
-        manager_id = text.split(" ")[1]
+        try:
+            manager_id = text.split(" ")[1]
+        except:
+            Bot.send_message(user_id, f"❌ Такая команда не поддерживается!")
+            return
+
         db.set_admin(manager_id, 1)
         Bot.send_message(user_id, f"✅ UserID: {manager_id} Права админа, выданы")
         Bot.send_message(manager_id, "✅ Доступ получен!\nТеперь я буду уведомлять тебя о звонках на номер taxi")
