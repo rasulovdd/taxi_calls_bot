@@ -247,19 +247,43 @@ def bot_thread():
         Bot.polling(none_stop=True, interval=0,  timeout=120) 
     except Exception as my_bot_error:
         app01.logger.info(f'[BOT] startup, Ошибка: {my_bot_error}')
-        app01.logger.info(f'[BOT] Bot упал отжался и встал')
+        app01.logger.info(f'[BOT] Bot упал')
         # отправляем сообщение админу
-        Bot.send_message(admins_id, f"Ошибка: {my_bot_error}")
-        Bot.send_message(admins_id, "Bot упал отжался и встал") # отправляем сообщение админу
-        sleep(20)
+        Bot.send_message(admins_id, "Bot упал") # отправляем сообщение админу
 
 # Запуск APP
 if __name__ == '__main__':
     flask_app = threading.Thread(target=flask_thread)
-    bot_app = threading.Thread(target=bot_thread)
-
     flask_app.start()
-    bot_app.start()
+    
+    # try:
+    #     bot_app = threading.Thread(target=bot_thread)
+    #     bot_app.start()
+    #     bot_app.join()
+    # except Exception as e:
+    #     sleep(10) #ждем 10 сек
+    #     print ("Ждем 10 секунд ........")
+    #     app01.logger.info(f'[BOT] startup, Ошибка: {e}')
+    #     app01.logger.info(f'[BOT] Bot упал отжался и встал')
+    #     bot_app = threading.Thread(target=bot_thread)
+    #     bot_app.start()
+    #     bot_app.join()
+    while True:
+        try:
+            app01.logger.info('[BOT] startup')
+            #отправляем уведомеление в чат админу
+            Bot.send_message(2964812, "Taxi Calls API на сервере bot02.wilgood.ru запустился") 
+            #Непрекращающаяся прослушка наших чатов
+            Bot.polling(none_stop=True, interval=0,  timeout=60) 
+        except Exception as my_bot_error:
+            app01.logger.info(f'[BOT] startup, Ошибка: {my_bot_error}')
+            Bot.send_message(admins_id, f"Ошибка: {my_bot_error}") # отправляем сообщение админу
+            app01.logger.info(f'[BOT] startup, Ждем 10 секунд ........')
+            sleep(10) #ждем 10 сек
+            app01.logger.info(f'[BOT] упал отжался и встал')
+            # отправляем сообщение админу
+            Bot.send_message(admins_id, "Bot упал отжался и встал") # отправляем сообщение админу
+    
+    #flask_app.join()
 
-    flask_app.join()
-    bot_app.join()
+    
